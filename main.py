@@ -64,6 +64,12 @@ toolkit = SQLDatabaseToolkit(db=db, llm=llm, format_instructions=prefix)
 tools = toolkit.get_tools()
 agent_executer = create_react_agent(llm,tools,state_modifier=system_message)
 
+def print_sql(sql):
+    print("""
+          The SQL query  is:
+          {}
+          """.format(sql))
+
 def process_question(prompted_question, conversation_history):
     context = "\n".join([f"Q:{entry['question']}\nA:{entry['answer']}" for entry in conversation_history])
     
@@ -80,8 +86,11 @@ def process_question(prompted_question, conversation_history):
 
     for s in agent_executer.stream({"messages":[HumanMessage(content=prompt)]}):
         for msg in s.get("agent",{}).get("messages",[]):
+            for call in msg.tools_calls:
+                if sql := call.get("args",{} ).get("query", None):
+                    print(print_sql(sql))
+
             print(msg.content)
             content.append(msg.content)
     return content
 
-# process_question("What is the most recent sale in database?")
