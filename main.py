@@ -46,18 +46,8 @@ POSTGRES_DB = os.getenv("PG_DB", "condo_gpt")
 connection_string = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 
 db = SQLDatabase.from_uri(connection_string)
-llm = ChatOpenAI(
-    model="openai/gpt-4o-2024-11-20",
-    temperature=0.0,
-    max_tokens=1000,
-    max_retries=2,
-    openai_api_key=os.getenv("OPENROUTER_API_KEY"),
-    openai_api_base="https://openrouter.ai/api/v1",
-    default_headers={
-        "HTTP-Referer": "https://your-site.com",  # Optional: Replace with your site URL
-        "X-Title": "Condo-GPT",  # Optional: Replace with your app name
-    }
-)
+llm = ChatOpenAI(model="gpt-4o-mini")
+
 
 prefix = SQL_PREFIX.format(
     table_names = db.get_usable_table_names(),
@@ -74,12 +64,24 @@ toolkit = SQLDatabaseToolkit(db=db, llm=llm, format_instructions=prefix)
 tools = toolkit.get_tools()
 agent_executer = create_react_agent(llm,tools,state_modifier=system_message)
 
-def process_question(prompted_question):
-    prompt = prompted_question
+def process_question(prompted_question, conversation_history):
+    context = "\n".join([f"Q:{entry['question']}\nA:{entry['answer']}" for entry in conversation_history])
+    
+    consolidated_prompt = f"""
+    
+    previous conversation history:{context}
+    
+    new question: {prompted_question}
+    
+    please answer new question taking into account the context from the previous conversation.
+    """
+    prompt = consolidated_prompt if conversation_history else prompted_question
     content = []
 
     for s in agent_executer.stream({"messages":[HumanMessage(content=prompt)]}):
         for msg in s.get("agent",{}).get("messages",[]):
             print(msg.content)
+            content.append(msg.content)
+    return content
 
-process_question("What is the most recent sale in database?")
+# process_question("What is the most recent sale in database?")
