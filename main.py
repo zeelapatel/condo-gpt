@@ -28,7 +28,9 @@
 # print(ai_message)
 
 import os
-
+import re
+import markdown
+from markupsafe import Markup
 from langchain_community.utilities.sql_database import SQLDatabase
 from langchain_openai import ChatOpenAI
 from prefix import SQL_PREFIX
@@ -72,6 +74,19 @@ def print_sql(sql):
 
 setuptools = setup_tools(db, llm)
 
+def extract_and_remove_html(text):
+    html_pattern = r"```html\s*([\s\S]*?)\s*```"
+    match = re.search(html_pattern, text, re.IGNORECASE)
+    if match:
+        html_content = match.group(1).strip()
+        
+        stripped_text = re.sub(html_pattern, "", text, flags=re.IGNORECASE).strip()
+        return Markup(html_content), stripped_text
+    return None, text
+
+def process_markdown(text):
+    html = markdown.markdown(text, extensions=['extra', 'codehilite'])
+    return Markup(html)
 def process_question(prompted_question, conversation_history):
     context = "\n".join([f"Q:{entry['question']}\nA:{entry['answer']}" for entry in conversation_history])
     
@@ -93,6 +108,12 @@ def process_question(prompted_question, conversation_history):
                     print(print_sql(sql))
 
             print(msg.content)
-            content.append(msg.content)
+            html, stripped_text = extract_and_remove_html(msg.content)
+
+            content.append(process_markdown(msg.content))
+            if html:
+                content.append(html)
+            else:
+                content.append(stripped_text)
     return content
 
