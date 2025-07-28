@@ -1,32 +1,3 @@
-# from openai import OpenAI
-# import getpass
-# import os
-# from langchain_openai import ChatOpenAI
-
-# if not os.getenv("OPENROUTER_API_KEY"):
-#     print("Please set the OPENROUTER_API_KEY environment variable.")
-#     os.environ["OPENROUTER_API_KEY"] = getpass.getpass("Enter your OpenRouter API key: ")
-    
-# llm = ChatOpenAI(
-#     model="openai/gpt-4o-2024-11-20",
-#     temperature=0.0,
-#     max_tokens=1000,
-#     max_retries=2,
-#     openai_api_key=os.getenv("OPENROUTER_API_KEY"),
-#     openai_api_base="https://openrouter.ai/api/v1",
-#     default_headers={
-#         "HTTP-Referer": "https://your-site.com",  # Optional: Replace with your site URL
-#         "X-Title": "Condo-GPT",  # Optional: Replace with your app name
-#     }
-# )
-
-
-# messages = [("system", "You are a helpful assistant that translate english to hindi."),
-#             ("human","hello, how are you?"),]
-
-# ai_message = llm.invoke(messages)
-# print(ai_message)
-
 import os
 import re
 import markdown
