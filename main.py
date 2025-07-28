@@ -36,6 +36,7 @@ from boilerplate import marker_boilerplate, holding_period_boilerplate, two_bed_
 from langchain_core.messages import SystemMessage, HumanMessage
 from langgraph.prebuilt import create_react_agent
 from langchain_community.agent_toolkits import SQLDatabaseToolkit
+from tools import setup_tools
 
 POSTGRES_USER = os.getenv("PG_USER", "postgres")
 POSTGRES_PASSWORD = os.getenv("PG_PASSWORD", "postgres")
@@ -60,8 +61,7 @@ prefix = SQL_PREFIX.format(
 )
 
 system_message = SystemMessage(content=prefix)
-toolkit = SQLDatabaseToolkit(db=db, llm=llm, format_instructions=prefix)
-tools = toolkit.get_tools()
+tools = setup_tools(db, llm)
 agent_executer = create_react_agent(llm,tools,state_modifier=system_message)
 
 def print_sql(sql):
@@ -69,6 +69,8 @@ def print_sql(sql):
           The SQL query  is:
           {}
           """.format(sql))
+
+setuptools = setup_tools(db, llm)
 
 def process_question(prompted_question, conversation_history):
     context = "\n".join([f"Q:{entry['question']}\nA:{entry['answer']}" for entry in conversation_history])
@@ -86,7 +88,7 @@ def process_question(prompted_question, conversation_history):
 
     for s in agent_executer.stream({"messages":[HumanMessage(content=prompt)]}):
         for msg in s.get("agent",{}).get("messages",[]):
-            for call in msg.tools_calls:
+            for call in msg.tool_calls:
                 if sql := call.get("args",{} ).get("query", None):
                     print(print_sql(sql))
 
